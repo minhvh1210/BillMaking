@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+/* Design token lấy từ Figma (file BillMaking). Theme tối bật bằng data-theme="dark" trên <html>. */
+:root {
+  --bg: #ffffff;
+  --bg-subtle: #fafafa;
+  --surface: #ffffff;
+  --surface-sunken: #f4f4f4;
+  --surface-hover: #fafafa;
+  --border: #e7e7e7;
+  --border-strong: #737373;
+  --border-input: #737373;
+  --ink: #171717;
+  --ink-muted: #525252;
+  --ink-subtle: #737373;
+  --primary: #118988;
+  --primary-hover: #38a4a2;
+  --primary-subtle: #eaf9f8;
+  --primary-ink: #0e7c7b;
+  --on-primary: #0a0a0a;
+  --secondary-subtle: #f0f6ff;
+  --secondary-ink: #44638d;
+  --error: #dc2626;
+  --error-hover: #b80411;
+  --error-subtle: #fff2f0;
+  --error-ink: #b80411;
+  --on-error: #ffffff;
+  --warning: #b26000;
+  --warning-subtle: #fff3ea;
+  --warning-ink: #914d00;
+  --success-subtle: #eafbec;
+  --success-ink: #007631;
+  --info-subtle: #f1f6ff;
+  --info-ink: #2563eb;
+  --pin: #d97706;
+  --focus: #118988;
+  /* Thanh trên cùng giữ màu navy ở cả hai theme */
+  --topbar: #0b1f3a;
+  --topbar-ink: #ffffff;
+  --topbar-muted: #c8dbf5;
+  --topbar-subtle: #aec9ee;
+  --topbar-avatar-ink: #90b1df;
+  --topbar-divider: #44638d;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --bg-subtle: #171717;
+  --surface: #171717;
+  --surface-sunken: #0a0a0a;
+  --surface-hover: #262626;
+  --border: #262626;
+  --border-strong: #737373;
+  --border-input: #737373;
+  --ink: #fafafa;
+  --ink-muted: #d4d4d4;
+  --ink-subtle: #a1a1a1;
+  --primary: #38a4a2;
+  --primary-hover: #66c0be;
+  --primary-subtle: #004a4a;
+  --primary-ink: #66c0be;
+  --on-primary: #0a0a0a;
+  --secondary-subtle: #0b1f3a;
+  --secondary-ink: #90b1df;
+  --error: #fb473f;
+  --error-hover: #ff8679;
+  --error-subtle: #7d0208;
+  --error-ink: #ff8679;
+  --on-error: #0a0a0a;
+  --warning: #d97706;
+  --warning-subtle: #613200;
+  --warning-ink: #f09649;
+  --success-subtle: #004e1e;
+  --success-ink: #5ec977;
+  --info-subtle: #10378d;
+  --info-ink: #83adff;
+  --pin: #f09649;
+  --focus: #66c0be;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-input: var(--border-input);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-ink: var(--primary-ink);
+  --color-on-primary: var(--on-primary);
+  --color-secondary-subtle: var(--secondary-subtle);
+  --color-secondary-ink: var(--secondary-ink);
+  --color-error: var(--error);
+  --color-error-hover: var(--error-hover);
+  --color-error-subtle: var(--error-subtle);
+  --color-error-ink: var(--error-ink);
+  --color-on-error: var(--on-error);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-ink: var(--warning-ink);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-ink: var(--success-ink);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-ink: var(--info-ink);
+  --color-pin: var(--pin);
+  --color-focus: var(--focus);
+  --color-topbar: var(--topbar);
+  --color-topbar-ink: var(--topbar-ink);
+  --color-topbar-muted: var(--topbar-muted);
+  --color-topbar-subtle: var(--topbar-subtle);
+  --color-topbar-avatar-ink: var(--topbar-avatar-ink);
+  --color-topbar-divider: var(--topbar-divider);
+  --font-sans: var(--font-inter);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+body {
+  background: var(--bg-subtle);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Caption/Regular, Label/Medium trong Figma có letter-spacing 0.25px */
+@utility text-caption {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.25px;
+}
+
+@utility focus-ring {
+  @apply outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-1 focus-visible:ring-offset-surface;
+}
+
+@utility btn {
+  @apply focus-ring inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center gap-2 rounded px-3 py-2 text-sm font-medium tracking-[0.1px] whitespace-nowrap transition disabled:cursor-not-allowed;
+}
+
+/* Lớp components: utility (text-*, bg-*) đặt cạnh vẫn ghi đè được */
+@layer components {
+  /* Ô nhập: Molecule/Input (cao 44, viền border-input, bo 4) */
+  .input {
+    @apply min-h-11 w-full rounded border border-border-input bg-surface px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink-muted focus:border-primary focus:ring-2 focus:ring-primary/25 disabled:border-border disabled:bg-surface-sunken disabled:text-ink-subtle aria-invalid:border-error;
+  }
+
+  .label {
+    @apply mb-1 block text-sm font-medium text-ink;
+  }
+
+  /* Nút: Molecule/Action/Button. md cao 44, sm cao 32, lg cao 56 */
+  .btn-primary {
+    @apply btn bg-primary text-on-primary hover:bg-primary-hover disabled:bg-surface-sunken disabled:text-ink-subtle;
+  }
+
+  .btn-secondary {
+    @apply btn border border-border-strong bg-surface text-primary-ink hover:bg-surface-hover disabled:border-border disabled:text-ink-subtle;
+  }
+
+  .btn-ghost {
+    @apply btn text-primary-ink hover:bg-surface-sunken disabled:text-ink-subtle;
+  }
+
+  .btn-danger {
+    @apply btn bg-error text-on-error hover:bg-error-hover disabled:bg-surface-sunken disabled:text-ink-subtle;
+  }
+
+  .btn-sm {
+    @apply text-caption min-h-8 px-2 py-1;
+  }
+
+  .btn-lg {
+    @apply min-h-14 px-4 py-3;
+  }
+
+  /* Nút icon 32x32 (… , ghim) */
+  .icon-btn {
+    @apply focus-ring inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded text-ink-muted transition hover:bg-surface-sunken aria-expanded:bg-surface-sunken;
+  }
+}

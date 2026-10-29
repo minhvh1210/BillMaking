@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Dự án / công ty sử dụng hệ thống. Tên được phép trùng.
+model Project {
+  id         String             @id @default(cuid())
+  name       String
+  pinned     Boolean            @default(false)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  cargoTypes ProjectCargoType[]
+}
+
+/// Loại hàng của một Project (FCL Import, Air Export, ...).
+/// Tự tạo khi thêm loại chứng từ đầu tiên; chỉ hiển thị khi có ít nhất một loại chứng từ.
+model ProjectCargoType {
+  id            String         @id @default(cuid())
+  projectId     String
+  cargoType     String
+  createdAt     DateTime       @default(now())
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  documentTypes DocumentType[]
+
+  @@unique([projectId, cargoType])
+}
+
+/// Loại chứng từ thuộc một loại hàng (B/L, Invoice, Packing List, D/O, ...).
+/// Mỗi loại chứng từ có một chứng từ mẫu, một query và một workspace Bill Making dùng chung.
+model DocumentType {
+  id                 String           @id @default(cuid())
+  projectCargoTypeId String
+  name               String
+  code               String?
+  /// Query truy vấn dữ liệu cho các field {example} của chứng từ mẫu
+  query              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  projectCargoType   ProjectCargoType @relation(fields: [projectCargoTypeId], references: [id], onDelete: Cascade)
+  template           Template?
+  bill               Bill?
+}
+
+/// Chứng từ mẫu (PDF/Word/Excel/HTML) chứa các field {example}. Mỗi loại chứng từ có tối đa một mẫu.
+model Template {
+  id             String       @id @default(cuid())
+  documentTypeId String       @unique
+  fileName       String
+  mimeType       String
+  storagePath    String
+  fileSize       Int
+  /// HTML chuyển đổi từ Word/Excel/HTML để xem trước và gửi cho AI
+  convertedHtml  String?
+  /// Danh sách field {xxx} phát hiện được (JSON string[])
+  placeholders   String?
+  createdAt      DateTime     @default(now())
+  documentType   DocumentType @relation(fields: [documentTypeId], references: [id], onDelete: Cascade)
+}
+
+/// Workspace Bill Making của một loại chứng từ: chứng từ gốc, kết quả, phiên bản và chat
+model Bill {
+  id                String        @id @default(cuid())
+  documentTypeId    String        @unique
+  sourceFileName    String?
+  sourceMimeType    String?
+  sourceStoragePath String?
+  sourceFileSize    Int?
+  /// Nội dung chuyển đổi từ Word/Excel (HTML) để gửi cho AI
+  sourceConverted   String?
+  /// Query của chứng từ gốc (bảng dữ liệu, ý nghĩa field) để AI hiểu ngữ cảnh khi Chat
+  sourceQuery       String?
+  /// Ảnh trang 1 của chứng từ gốc dạng Word (Word render), gửi cho AI khi Making / Chat
+  sourcePagePath    String?
+  /// DRAFT | PROCESSING | DONE | FAILED
+  status            String        @default("DRAFT")
+  /// HTML: AI dựng lại chứng từ bằng HTML | DOCX: điền field vào chính file Word của chứng từ gốc
+  resultKind        String        @default("HTML")
+  resultHtml        String?
+  /// DOCX: JSON vị trí các field [{ field, text, x, y, w, h, fontSize, area, note }] (đơn vị pt)
+  resultPlacements  String?
+  /// DOCX: file kết quả và bản PDF xem trước (đường dẫn trong thư mục upload)
+  resultDocxPath    String?
+  resultPdfPath     String?
+  /// Query kết quả: query chứng từ cần làm đã được AI sửa cho khớp với chứng từ (đổi / thêm / bỏ field)
+  resultQuery       String?
+  /// JSON: [{ key, value, found, note }]
+  extractedFields   String?
+  /// JSON: string[]
+  warnings          String?
+  summary           String?
+  errorMessage      String?
+  model             String?
+  inputTokens       Int?
+  outputTokens      Int?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  documentType      DocumentType  @relation(fields: [documentTypeId], references: [id], onDelete: Cascade)
+  versions          BillVersion[]
+  messages          ChatMessage[]
+}
+
+/// Lịch sử phiên bản kết quả (Making, Chat, sửa tay)
+model BillVersion {
+  id         String   @id @default(cuid())
+  billId     String
+  /// HTML | DOCX (giống Bill.resultKind)
+  kind       String   @default("HTML")
+  /// HTML: nội dung kết quả. DOCX: để trống, dữ liệu nằm ở placements
+  html       String
+  /// DOCX: JSON vị trí các field của phiên bản này (bản Making cũ, trước khi lưu file theo phiên bản)
+  placements String?
+  /// DOCX: file Word của phiên bản này (đường dẫn trong thư mục upload)
+  filePath   String?
+  /// Query kết quả của phiên bản này
+  query      String?
+  /// MAKING | CHAT | MANUAL | RESTORE
+  source     String
+  note       String?
+  createdAt  DateTime @default(now())
+  bill       Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  billId    String
+  /// user | assistant
+  role      String
+  content   String
+  versionId String?
+  isError   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  bill      Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+}
+
+/// Cấu hình hệ thống dạng key-value (API key đã mã hóa, model AI, ...)
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
