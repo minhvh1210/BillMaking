@@ -40,7 +40,7 @@ npm run db:migrate          # tạo database SQLite
 npm run dev                 # http://localhost:3000
 ```
 
-Kết nối AI mặc định qua **Claude Code**: máy chạy app cần cài Claude Code và đăng nhập trước (chạy `claude` trong terminal rồi gõ `/login`). Nếu lệnh `claude` không nằm trong PATH, đặt biến `CLAUDE_CODE_PATH` trong `.env`. Muốn dùng API key thì chuyển cách kết nối trong mục **Kết nối AI**.
+Kết nối AI mặc định qua **Claude Code**: máy chạy app cần cài Claude Code và đăng nhập trước (chạy `claude` trong terminal rồi gõ `/login`). Cài bằng bộ cài chính thức hay bằng `npm install -g @anthropic-ai/claude-code` đều được. Nếu lệnh `claude` không nằm trong PATH, đặt biến `CLAUDE_CODE_PATH` trong `.env`. Muốn dùng API key thì chuyển cách kết nối trong mục **Kết nối AI**.
 
 Chạy production:
 

@@ -1,6 +1,6 @@
 import "server-only";
 import { spawn } from "node:child_process";
-import { copyFile, mkdtemp, rm } from "node:fs/promises";
+import { access, copyFile, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { AiUserError, type AiRunResult, type PromptPart, type StructuredRequest } from "@/lib/ai/types";
@@ -15,11 +15,79 @@ const NOT_FOUND_MESSAGE =
   "Không tìm thấy Claude Code trên máy chủ. Cài Claude Code rồi đăng nhập (chạy `claude` trong terminal), " +
   "hoặc đặt biến môi trường CLAUDE_CODE_PATH trỏ tới file claude.";
 
+type CliCommand = { file: string; prefixArgs: string[] };
+
+async function exists(file: string): Promise<boolean> {
+  return access(file).then(
+    () => true,
+    () => false,
+  );
+}
+
+/** Tìm file thực thi trong PATH theo thứ tự PATHEXT, giống cách cmd.exe tìm lệnh */
+async function findOnWindowsPath(name: string): Promise<string | null> {
+  const dirs = (process.env.PATH ?? "").split(path.delimiter).filter(Boolean);
+  const exts = path.extname(name)
+    ? [""]
+    : (process.env.PATHEXT ?? ".COM;.EXE;.BAT;.CMD").split(";").filter(Boolean);
+  const hasDir = name.includes("/") || name.includes("\\");
+  for (const dir of hasDir ? [""] : dirs) {
+    for (const ext of exts) {
+      const candidate = path.resolve(dir, name + ext);
+      if (await exists(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+/**
+ * Bản cài qua npm trên Windows là file claude.cmd, Node không chạy trực tiếp được (lỗi EINVAL)
+ * và chạy qua cmd.exe thì không truyền được prompt nhiều dòng. Vì vậy đọc file .cmd để lấy
+ * chương trình thật nó gọi: bin\claude.exe (bản mới) hoặc cli.js chạy bằng Node (bản cũ).
+ */
+async function resolveCmdShim(shimPath: string): Promise<CliCommand> {
+  const content = await readFile(shimPath, "utf8");
+  const targets = [...content.matchAll(/"%~?dp0%?\\([^"]+)"/gi)]
+    .map((match) => path.join(path.dirname(shimPath), match[1]))
+    .filter((target) => !/node(\.exe)?$/i.test(target));
+  const target = targets.at(-1);
+  if (!target || !(await exists(target))) {
+    throw new AiUserError(
+      `Không đọc được file ${shimPath}. Đặt biến môi trường CLAUDE_CODE_PATH trỏ tới file claude.exe hoặc cli.js.`,
+    );
+  }
+  return /\.(c|m)?js$/i.test(target)
+    ? { file: process.execPath, prefixArgs: [target] }
+    : { file: target, prefixArgs: [] };
+}
+
+async function resolveCliCommand(): Promise<CliCommand> {
+  if (/\.(c|m)?js$/i.test(CLAUDE_BIN)) return { file: process.execPath, prefixArgs: [CLAUDE_BIN] };
+  if (process.platform !== "win32") return { file: CLAUDE_BIN, prefixArgs: [] };
+
+  const found = await findOnWindowsPath(CLAUDE_BIN);
+  // Không tìm thấy thì cứ để spawn báo ENOENT
+  if (!found) return { file: CLAUDE_BIN, prefixArgs: [] };
+  return /\.(cmd|bat)$/i.test(found) ? resolveCmdShim(found) : { file: found, prefixArgs: [] };
+}
+
+let cliCommand: Promise<CliCommand> | null = null;
+
+/** Tìm một lần rồi dùng lại; nếu lỗi thì lần sau tìm lại (người dùng có thể vừa cài Claude Code) */
+function getCliCommand(): Promise<CliCommand> {
+  cliCommand ??= resolveCliCommand().catch((error) => {
+    cliCommand = null;
+    throw error;
+  });
+  return cliCommand;
+}
+
 type CliResult = { stdout: string; stderr: string; code: number | null };
 
-function runCli(args: string[], options: { cwd?: string; input?: string; timeoutMs: number }): Promise<CliResult> {
+async function runCli(args: string[], options: { cwd?: string; input?: string; timeoutMs: number }): Promise<CliResult> {
+  const command = await getCliCommand();
   return new Promise((resolve, reject) => {
-    const child = spawn(CLAUDE_BIN, args, {
+    const child = spawn(command.file, [...command.prefixArgs, ...args], {
       cwd: options.cwd,
       env: {
         ...process.env,
@@ -39,6 +107,7 @@ function runCli(args: string[], options: { cwd?: string; input?: string; timeout
     child.stderr.setEncoding("utf8").on("data", (chunk: string) => (stderr += chunk));
     child.on("error", (error: NodeJS.ErrnoException) => {
       clearTimeout(timer);
+      if (error.code === "ENOENT") cliCommand = null;
       reject(error.code === "ENOENT" ? new AiUserError(NOT_FOUND_MESSAGE) : error);
     });
     child.on("close", (code) => {
