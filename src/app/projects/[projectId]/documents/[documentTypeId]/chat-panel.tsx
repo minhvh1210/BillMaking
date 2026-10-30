@@ -81,7 +81,7 @@ export function ChatPanel(props: { billId: string; messages: ChatMessageView[]; 
           <p className="m-auto text-center text-sm text-ink-muted">
             {props.context.editsWord
               ? "Nhắn để sửa thẳng file Word: đổi field, dời, xóa, thêm ô, đổi cỡ chữ."
-              : "Hỏi AI về chứng từ cần làm, mẫu hoặc query."}
+              : "Hỏi AI về chứng từ cần làm, mẫu hoặc query, hoặc nhờ AI dựng chứng từ mà không cần Making."}
           </p>
         )}
         {messages.map((m) => (

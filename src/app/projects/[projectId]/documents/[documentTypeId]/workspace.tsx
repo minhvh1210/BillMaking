@@ -183,10 +183,10 @@ export function Workspace({ view }: { view: WorkspaceView }) {
             bill.source?.isWord
               ? "Chat với AI để sửa thẳng file Word, hoặc bấm Making để ghép field từ chứng từ mẫu"
               : !view.template
-                ? "Thêm chứng từ mẫu để bắt đầu"
+                ? "Thêm chứng từ mẫu, hoặc Chat với AI để bắt đầu"
                 : !bill.source
-                  ? "Upload chứng từ cần làm để bắt đầu"
-                  : "Bấm Making để tạo kết quả"
+                  ? "Upload chứng từ cần làm, hoặc Chat với AI để bắt đầu"
+                  : "Bấm Making hoặc Chat với AI để tạo kết quả"
           }
         />
         <ChatPanel

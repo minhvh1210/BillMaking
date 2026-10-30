@@ -414,13 +414,17 @@ export async function sendChatAction(billId: string, text: string): Promise<Acti
     });
 
     let versionId: string | null = null;
-    if (bill.resultHtml && result.data.html_changed && result.data.html.trim()) {
+    // Chưa Making vẫn được: chat dựng chứng từ lần đầu thì lưu thành kết quả và phiên bản đầu tiên
+    if (result.data.html_changed && result.data.html.trim()) {
       const html = sanitizeResultHtml(keepTemplateStyles(result.data.html, bill.documentType.template?.convertedHtml));
       const version = await db.billVersion.create({
         data: { billId, html, source: "CHAT", note: request.slice(0, 200) },
       });
       versionId = version.id;
-      await db.bill.update({ where: { id: billId }, data: { resultHtml: html } });
+      await db.bill.update({
+        where: { id: billId },
+        data: { resultKind: "HTML", resultHtml: html, status: "DONE", errorMessage: null },
+      });
     }
     await db.chatMessage.create({
       data: { billId, role: "assistant", content: result.data.reply, versionId },

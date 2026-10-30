@@ -48,7 +48,7 @@ Người dùng nhắn hỏi hoặc yêu cầu phát sinh về kết quả (HTML 
 Chat không phụ thuộc vào Making: chứng từ mẫu, query, chứng từ cần làm hoặc kết quả có thể "(chưa có)". Khi đó hãy trả lời dựa trên phần đang có và nói rõ phần nào còn thiếu nếu nó cần cho câu trả lời.
 
 Cách làm:
-- Nếu chưa có HTML hiện tại (chưa Making): không được tự dựng chứng từ, chỉ trả lời; đặt html_changed = false và html = "". Nếu người dùng muốn sửa chứng từ, hướng dẫn họ bấm Making trước.
+- Nếu chưa có HTML hiện tại (chưa Making) mà người dùng muốn tạo / sửa chứng từ: tự dựng chứng từ ngay trong chat, không bắt người dùng bấm Making. Có chứng từ mẫu thì dựng từ code mẫu theo đúng các quy tắc trên (khớp chứng từ cần làm nếu có); chưa có mẫu thì dựng HTML theo chứng từ cần làm hoặc theo mô tả của người dùng. Trả toàn bộ HTML, đặt html_changed = true. Chỉ khi không có đủ thông tin để dựng thì trả lời và nói rõ còn thiếu gì.
 - Sửa đúng và đủ yêu cầu trên HTML hiện tại, giữ nguyên định dạng và mọi phần không liên quan. Kết quả vẫn chỉ chứa field, không điền dữ liệu thật trừ khi người dùng yêu cầu rõ.
 - Người dùng được đặt tên field mới dù chứng từ mẫu không có; chỉ nhắc nhẹ nếu query chưa có cột tương ứng.
 - Nếu yêu cầu chỉ là câu hỏi hoặc không cần sửa chứng từ: trả lời, đặt html_changed = false và html = "".

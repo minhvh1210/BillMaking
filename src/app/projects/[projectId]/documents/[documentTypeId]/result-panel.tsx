@@ -23,6 +23,16 @@ export function ResultPanel(props: { bill: BillView; making: boolean; setupHint:
   const { bill } = props;
   const [tab, setTab] = useState<Tab>("result");
 
+  // Có phiên bản kết quả mới (Making / Chat / Khôi phục) hoặc bắt đầu Making: tự chuyển về tab Kết quả
+  const latestVersionId = bill.versions[0]?.id ?? null;
+  const [seenVersionId, setSeenVersionId] = useState(latestVersionId);
+  const [seenMaking, setSeenMaking] = useState(props.making);
+  if (latestVersionId !== seenVersionId || props.making !== seenMaking) {
+    if (latestVersionId !== seenVersionId || props.making) setTab("result");
+    setSeenVersionId(latestVersionId);
+    setSeenMaking(props.making);
+  }
+
   const tabs: { key: Tab; label: string }[] = [
     { key: "result", label: "Kết quả" },
     { key: "fields", label: `Dữ liệu trích xuất (${bill.fields.length})` },
