@@ -38,9 +38,8 @@ function pastedFile(formData: FormData, defaultName: string): FormData {
   if (!content) throw new Error("Vui lòng dán nội dung.");
   const looksLikeHtml = /<\/?[a-z][\s\S]*?>/i.test(content);
   const html = looksLikeHtml ? content : `<pre>${escapeHtml(content)}</pre>`;
-  const base = (textField(formData, "name") ?? defaultName).replace(/\.(html?|txt)$/i, "").replace(/[\\/:*?"<>|]+/g, "_");
   const data = new FormData();
-  data.set("file", new File([html], `${base}.html`, { type: "text/html" }));
+  data.set("file", new File([html], `${defaultName}.html`, { type: "text/html" }));
   return data;
 }
 

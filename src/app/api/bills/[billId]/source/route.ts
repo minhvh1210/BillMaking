@@ -3,11 +3,11 @@ import { kindFromMime } from "@/lib/file-convert";
 import { ensureHtmlDocument } from "@/lib/html";
 import { SANDBOXED_HTML_HEADERS, fileResponse, notFoundResponse } from "@/lib/http";
 import { readUpload } from "@/lib/storage";
-import { wordPdfPreview } from "@/lib/word-preview";
+import { excelPdfPreview, wordPdfPreview } from "@/lib/word-preview";
 
 /**
- * Xem chứng từ cần làm: PDF/ảnh trả file gốc, Word trả PDF do Word render (nếu máy có Word),
- * Excel/HTML (hoặc Word khi không có Word) trả bản chuyển đổi trong sandbox.
+ * Xem chứng từ cần làm: PDF/ảnh trả file gốc, Word / Excel trả PDF do Word / Excel xuất (nếu máy có),
+ * HTML (hoặc Word / Excel khi máy không có Office) trả bản chuyển đổi trong sandbox.
  */
 export async function GET(_: Request, ctx: RouteContext<"/api/bills/[billId]/source">) {
   const { billId } = await ctx.params;
@@ -24,6 +24,10 @@ export async function GET(_: Request, ctx: RouteContext<"/api/bills/[billId]/sou
   // File Word: xem bằng PDF do Word render để giữ đúng bố cục (form có nhãn là ảnh, text box)
   if (kind === "docx") {
     const pdf = await wordPdfPreview(bill.sourceStoragePath);
+    if (pdf) return fileResponse(pdf, "application/pdf", `${bill.sourceFileName}.pdf`, true);
+  }
+  if (kind === "spreadsheet") {
+    const pdf = await excelPdfPreview(bill.sourceStoragePath);
     if (pdf) return fileResponse(pdf, "application/pdf", `${bill.sourceFileName}.pdf`, true);
   }
   if (bill.sourceConverted != null) {

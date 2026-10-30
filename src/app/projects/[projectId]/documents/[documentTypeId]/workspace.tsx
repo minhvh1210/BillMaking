@@ -60,7 +60,7 @@ export type BillView = {
   messages: ChatMessageView[];
 };
 
-const TEMPLATE_ACCEPT = ".pdf,.docx,.xlsx,.xls,.csv,.html,.htm";
+const TEMPLATE_ACCEPT = ".pdf,.docx,.xlsx,.xls,.csv,.html,.htm,.png,.jpg,.jpeg,.webp,.gif";
 const SOURCE_ACCEPT = ".pdf,.docx,.xlsx,.xls,.csv,.html,.htm,.png,.jpg,.jpeg,.webp,.gif";
 
 export function Workspace({ view }: { view: WorkspaceView }) {
@@ -388,7 +388,23 @@ function UploadDrop(props: {
   );
 }
 
-/** Modal "Thêm …": tab Upload file (kéo thả / chọn file, lưu ngay) và tab Dán nội dung (HTML / văn bản) */
+/**
+ * Ảnh trong clipboard (ảnh chụp màn hình, ảnh copy), đặt lại tên vì trình duyệt luôn đặt là "image.png".
+ * Copy từ Word / Excel có kèm ảnh của vùng chọn: khi clipboard có chữ thì ưu tiên dán chữ.
+ */
+function clipboardImage(data: DataTransfer | null): File | null {
+  if (!data || data.getData("text/plain").trim()) return null;
+  const file = Array.from(data.files).find((f) => f.type.startsWith("image/"));
+  if (!file) return null;
+  const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
+  const stamp = new Date().toTimeString().slice(0, 8).replace(/:/g, "");
+  return new File([file], `anh-dan-${stamp}.${ext}`, { type: file.type });
+}
+
+/**
+ * Modal "Thêm …": tab Upload file (kéo thả / chọn file, lưu ngay)
+ * và tab Dán nội dung (HTML, văn bản hoặc ảnh, xem lại rồi bấm Lưu)
+ */
 function AddFileDialog(props: {
   title: string;
   accept: string;
@@ -398,13 +414,19 @@ function AddFileDialog(props: {
 }) {
   const [mode, setMode] = useState<"file" | "paste">("file");
   const [dragging, setDragging] = useState(false);
+  const [image, setImage] = useState<{ file: File; url: string } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, pasteAction] = useActionState(props.paste, null);
-  const { onClose } = props;
+  const { onClose, onFile } = props;
 
   useEffect(() => {
     if (state?.ok) onClose();
   }, [state, onClose]);
+
+  useEffect(() => {
+    if (!image) return;
+    return () => URL.revokeObjectURL(image.url);
+  }, [image]);
 
   const modes = [
     { key: "file", label: "Upload file" },
@@ -415,7 +437,7 @@ function AddFileDialog(props: {
     <Dialog open onClose={onClose} label={props.title} width={640}>
       <div className="flex flex-col gap-5 p-6">
         <h2 className="text-lg font-semibold text-ink">{props.title}</h2>
-        <div role="radiogroup" aria-label="Cách thêm" className="flex gap-0.5 self-start rounded bg-surface-sunken p-0.5">
+        <div role="radiogroup" aria-label="Cách thêm" className="flex gap-0.5 self-start rounded bg-surface-sunken p-1">
           {modes.map((m) => (
             <button
               key={m.key}
@@ -455,7 +477,7 @@ function AddFileDialog(props: {
               <button type="button" className="btn-secondary btn-sm" onClick={() => inputRef.current?.click()}>
                 Chọn file
               </button>
-              <p className="text-caption text-ink-muted">PDF, Word, Excel, HTML · tối đa 100 MB</p>
+              <p className="text-caption text-ink-muted">PDF, Word, Excel, HTML, ảnh · tối đa 100 MB</p>
               <input
                 ref={inputRef}
                 type="file"
@@ -474,20 +496,47 @@ function AddFileDialog(props: {
             </div>
           </>
         ) : (
-          <form action={pasteAction} className="flex flex-col gap-5">
-            <Field label="Tên (tùy chọn)" htmlFor="paste-name">
-              <input id="paste-name" name="name" className="input" placeholder="VD: hbl-mau" />
-            </Field>
-            <Field label="Nội dung HTML hoặc văn bản" htmlFor="paste-content">
-              <textarea
-                id="paste-content"
-                name="content"
-                required
-                autoFocus
-                rows={12}
-                spellCheck={false}
-                className="input resize-y font-mono text-[13px] leading-5"
-              />
+          <form
+            action={pasteAction}
+            onSubmit={(e) => {
+              // Ảnh dán vào đi luồng upload file; code HTML / văn bản đi luồng dán
+              if (!image) return;
+              e.preventDefault();
+              onFile(image.file);
+            }}
+            className="flex flex-col gap-5"
+          >
+            <Field label="Nội dung" htmlFor="paste-content">
+              {image ? (
+                <div className="flex flex-col gap-2 rounded border border-border bg-bg-subtle p-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- ảnh tạm từ clipboard (blob URL) */}
+                  <img src={image.url} alt="Ảnh vừa dán" className="max-h-60 self-center rounded object-contain" />
+                  <div className="flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink">{image.file.name}</span>
+                    <span className="text-caption shrink-0 text-ink-muted">{formatBytes(image.file.size)}</span>
+                    <button type="button" className="btn-ghost btn-sm" onClick={() => setImage(null)}>
+                      Gỡ
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <textarea
+                  id="paste-content"
+                  name="content"
+                  required
+                  autoFocus
+                  rows={12}
+                  spellCheck={false}
+                  placeholder="Dán HTML, văn bản hoặc ảnh vào đây"
+                  onPaste={(e) => {
+                    const file = clipboardImage(e.clipboardData);
+                    if (!file) return;
+                    e.preventDefault();
+                    setImage({ file, url: URL.createObjectURL(file) });
+                  }}
+                  className="input resize-y font-mono text-[13px] leading-5"
+                />
+              )}
             </Field>
             <FormMessage state={state} />
             <div className="flex justify-end gap-2">

@@ -3,11 +3,11 @@ import { kindFromMime } from "@/lib/file-convert";
 import { ensureHtmlDocument } from "@/lib/html";
 import { SANDBOXED_HTML_HEADERS, fileResponse, notFoundResponse } from "@/lib/http";
 import { readUpload } from "@/lib/storage";
-import { wordPdfPreview } from "@/lib/word-preview";
+import { excelPdfPreview, wordPdfPreview } from "@/lib/word-preview";
 
 /**
- * Xem trước chứng từ mẫu: PDF trả file gốc, Word trả PDF do Word render (giữ bố cục),
- * Excel/HTML (hoặc Word khi máy không có Word) trả HTML trong sandbox.
+ * Xem trước chứng từ mẫu: PDF/ảnh trả file gốc, Word / Excel trả PDF do Word / Excel xuất (giữ bố cục),
+ * HTML (hoặc Word / Excel khi máy không có Office) trả HTML trong sandbox.
  */
 export async function GET(_: Request, ctx: RouteContext<"/api/templates/[templateId]/preview">) {
   const { templateId } = await ctx.params;
@@ -15,11 +15,15 @@ export async function GET(_: Request, ctx: RouteContext<"/api/templates/[templat
   if (!template) return notFoundResponse();
 
   const kind = kindFromMime(template.mimeType);
-  if (kind === "pdf") {
+  if (kind === "pdf" || kind === "image") {
     return fileResponse(await readUpload(template.storagePath), template.mimeType, template.fileName, true);
   }
   if (kind === "docx") {
     const pdf = await wordPdfPreview(template.storagePath);
+    if (pdf) return fileResponse(pdf, "application/pdf", `${template.fileName}.pdf`, true);
+  }
+  if (kind === "spreadsheet") {
+    const pdf = await excelPdfPreview(template.storagePath);
     if (pdf) return fileResponse(pdf, "application/pdf", `${template.fileName}.pdf`, true);
   }
   if (template.convertedHtml != null) {

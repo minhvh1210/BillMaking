@@ -46,7 +46,7 @@ export const PAGE_IMAGE_SCALE = 2;
 // Word chỉ nên chạy một phiên mỗi lúc
 let queue: Promise<unknown> = Promise.resolve();
 
-function runPowerShell(args: string[], timeoutMs: number): Promise<void> {
+export function runPowerShell(args: string[], timeoutMs: number, app = "Word"): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn("powershell.exe", ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", ...args], {
       windowsHide: true,
@@ -55,7 +55,7 @@ function runPowerShell(args: string[], timeoutMs: number): Promise<void> {
     child.stderr.setEncoding("utf8").on("data", (chunk: string) => (stderr += chunk));
     const timer = setTimeout(() => {
       child.kill();
-      reject(new Error("Word xử lý quá lâu."));
+      reject(new Error(`${app} xử lý quá lâu.`));
     }, timeoutMs);
     child.on("error", (error) => {
       clearTimeout(timer);

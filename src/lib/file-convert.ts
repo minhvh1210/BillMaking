@@ -26,10 +26,10 @@ const EXTENSIONS: Record<string, { kind: FileKind; mime: string }> = {
   ".gif": { kind: "image", mime: "image/gif" },
 };
 
-export const TEMPLATE_ACCEPT = ".pdf,.docx,.xlsx,.xls,.csv,.html,.htm";
+export const TEMPLATE_ACCEPT = ".pdf,.docx,.xlsx,.xls,.csv,.html,.htm,.png,.jpg,.jpeg,.webp,.gif";
 export const SOURCE_ACCEPT = ".pdf,.docx,.xlsx,.xls,.csv,.html,.htm,.png,.jpg,.jpeg,.webp,.gif";
 
-const TEMPLATE_KINDS: FileKind[] = ["pdf", "docx", "spreadsheet", "html"];
+const TEMPLATE_KINDS: FileKind[] = ["pdf", "docx", "spreadsheet", "html", "image"];
 
 export function detectFile(fileName: string): { kind: FileKind; mime: string } | null {
   return EXTENSIONS[path.extname(fileName).toLowerCase()] ?? null;
@@ -42,7 +42,9 @@ export function kindFromMime(mime: string): FileKind | null {
 export function assertTemplateFile(fileName: string) {
   const info = detectFile(fileName);
   if (!info || !TEMPLATE_KINDS.includes(info.kind)) {
-    throw new Error("Chứng từ mẫu chỉ hỗ trợ PDF, Word (.docx), Excel (.xlsx, .xls, .csv) hoặc HTML.");
+    throw new Error(
+      "Chứng từ mẫu chỉ hỗ trợ PDF, Word (.docx), Excel (.xlsx, .xls, .csv), HTML hoặc ảnh (PNG, JPG, WEBP, GIF).",
+    );
   }
   return info;
 }
