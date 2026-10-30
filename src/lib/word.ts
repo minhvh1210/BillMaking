@@ -35,7 +35,8 @@ try {
   if ($Pdf) { $doc.SaveAs([ref]$Pdf, [ref]17) }
   $doc.Close([ref]0)
 } finally {
-  $word.Quit()
+  # Word 2007 có thể đã tự thoát sau Close, Quit báo lỗi RPC dù đã render xong
+  try { $word.Quit() } catch {}
 }
 `;
 
